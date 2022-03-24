@@ -1,0 +1,95 @@
+{
+package yue
+// TODO? idk
+
+import (
+	"fmt"
+
+	ast "bits.chrsm.org/yuelint/ast"
+)
+}
+
+Grammar <- statements:(_? Node _?)+ EOF {
+	fmt.Printf("%#v\n", statements)
+
+	return ast.Root{statements}, nil
+}
+
+Node <- s:( ImportFrom / Import / IfCond / Assignment ) {
+	return s, nil
+}
+
+ImportFrom <- Import _ '"'? pkgA:Ident '"'? _ "from" _ fromA:Ident {
+	fmt.Printf("imp-from pkg: %#v\n", pkgA)
+	fmt.Printf("imp-from from: %#v\n", fromA)
+
+	pkg := pkgA.(ast.Ident)
+	from := fromA.(ast.Ident)
+
+	return ast.Import{
+		Package: &pkg,
+		From: from,
+	}, nil
+}
+
+// obviously not correct, this is basically only allowing `if <var>`
+IfCond <- If _ cond:Ident {
+	fmt.Printf("if-expr: %#v\n", cond)
+
+	return &ast.If{
+	}, nil
+}
+
+
+// -------- basic tokens --------
+Import <- "import" {
+	return ast.Import{
+	}, nil
+}
+
+If <- _ "if" _ {
+	return ast.If{}, nil
+}
+
+Else <- _ "else" _ {
+	return ast.Else{}, nil
+}
+
+Elseif <- _ "elseif" _ {
+	return ast.Elseif{}, nil
+}
+
+Unless <- _ "unless" _ {
+	return ast.Unless{}, nil
+}
+
+Assignment <- lhs:Ident _? "=" _? rhs:Ident {
+	fmt.Printf("lhs: %#v\nrhs: %#v\n", lhs, rhs)
+	return nil, nil
+}
+
+Op <- ("&&" / "||" / "<=" / ">=" / "==" / "!=" / "~=" / "+" / "-" / "*" / "/" / "%" / ">" / "<") {
+	return ast.Op{}, nil
+}
+
+Ident <- [a-zA-Z]+ ( [0-9a-zA-Z_])* {
+	return ast.Ident{
+		Name: string(c.text),
+	}, nil
+}
+
+Number <- [0-9]+ {
+	return ast.Number{}, nil
+}
+
+Float <- Number "."? Number {
+	return ast.Float{}, nil
+}
+
+_ "whitespace" <- [ \t\r\n]* {
+	return ast.Whitespace{}, nil
+}
+
+EOF <- !. {
+	return ast.EOF{}, nil
+}
